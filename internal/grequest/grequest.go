@@ -1,4 +1,4 @@
-// Package gorequest inspired by Nodejs SuperAgent provides easy-way to write http client
+// Package grequest inspired by Nodejs SuperAgent provides easy-way to write http client
 package grequest
 
 import (
@@ -88,7 +88,7 @@ func New() *SuperAgent {
 	}
 	jar, _ := cookiejar.New(&cookiejarOptions)
 
-	debug := os.Getenv("GOREQUEST_DEBUG") == "1"
+	debug := os.Getenv("GREQUEST_DEBUG") == "1"
 
 	s := &SuperAgent{
 		TargetType:        "json",
@@ -107,11 +107,19 @@ func New() *SuperAgent {
 		BasicAuth:         struct{ Username, Password string }{},
 		Debug:             debug,
 		CurlCommand:       false,
-		logger:            log.New(os.Stderr, "[gorequest]", log.LstdFlags),
+		logger:            log.New(os.Stderr, "[grequest]", log.LstdFlags),
 	}
-	// disable keep alives by default, see this issue https://github.com/parnurzeal/gorequest/issues/75
+	// disable keep alives by default, see this issue https://github.com/parnurzeal/grequest/issues/75
 	s.Transport.DisableKeepAlives = true
 	return s
+}
+
+func Q() *SuperAgent {
+	return New().Timeout(5*time.Second).Retry(
+		3,
+		5 * time.Second,
+		http.StatusBadRequest,
+		http.StatusInternalServerError)
 }
 
 // Enable the debug mode which logs request/response detail
@@ -239,7 +247,7 @@ func (s *SuperAgent) Options(targetUrl string) *SuperAgent {
 // Set is used for setting header fields.
 // Example. To set `Accept` as `application/json`
 //
-//    gorequest.New().
+//    grequest.New().
 //      Post("/gamelist").
 //      Set("Accept", "application/json").
 //      End()
@@ -253,7 +261,7 @@ func (s *SuperAgent) Set(param string, value string) *SuperAgent {
 //          3 max attempt.
 //          And StatusBadRequest and StatusInternalServerError as RetryableStatus
 
-//    gorequest.New().
+//    grequest.New().
 //      Post("/gamelist").
 //      Retry(3, 5 * time.seconds, http.StatusBadRequest, http.StatusInternalServerError).
 //      End()
@@ -284,7 +292,7 @@ func (s *SuperAgent) Retry(retryerCount int, retryerTime time.Duration, statusCo
 // SetBasicAuth sets the basic authentication header
 // Example. To set the header for username "myuser" and password "mypass"
 //
-//    gorequest.New()
+//    grequest.New()
 //      Post("/gamelist").
 //      SetBasicAuth("myuser", "mypass").
 //      End()
@@ -319,7 +327,7 @@ var Types = map[string]string{
 // Type is a convenience function to specify the data type to send.
 // For example, to send data as `application/x-www-form-urlencoded` :
 //
-//    gorequest.New().
+//    grequest.New().
 //      Post("/recipe").
 //      Type("form").
 //      Send(`{ "name": "egg benedict", "category": "brunch" }`).
@@ -327,7 +335,7 @@ var Types = map[string]string{
 //
 // This will POST the body "name=egg benedict&category=brunch" to url /recipe
 //
-// GoRequest supports
+// grequest supports
 //
 //    "text/html" uses "html"
 //    "application/json" uses "json"
@@ -347,7 +355,7 @@ func (s *SuperAgent) Type(typeStr string) *SuperAgent {
 // Query function accepts either json string or strings which will form a query-string in url of GET method or body of POST method.
 // For example, making "/search?query=bicycle&size=50x50&weight=20kg" using GET method:
 //
-//      gorequest.New().
+//      grequest.New().
 //        Get("/search").
 //        Query(`{ query: 'bicycle' }`).
 //        Query(`{ size: '50x50' }`).
@@ -356,14 +364,14 @@ func (s *SuperAgent) Type(typeStr string) *SuperAgent {
 //
 // Or you can put multiple json values:
 //
-//      gorequest.New().
+//      grequest.New().
 //        Get("/search").
 //        Query(`{ query: 'bicycle', size: '50x50', weight: '20kg' }`).
 //        End()
 //
 // Strings are also acceptable:
 //
-//      gorequest.New().
+//      grequest.New().
 //        Get("/search").
 //        Query("query=bicycle&size=50x50").
 //        Query("weight=20kg").
@@ -371,7 +379,7 @@ func (s *SuperAgent) Type(typeStr string) *SuperAgent {
 //
 // Or even Mixed! :)
 //
-//      gorequest.New().
+//      grequest.New().
 //        Get("/search").
 //        Query("query=bicycle").
 //        Query(`{ size: '50x50', weight:'20kg' }`).
@@ -471,7 +479,7 @@ func (s *SuperAgent) Timeout(timeout time.Duration) *SuperAgent {
 // Set TLSClientConfig for underling Transport.
 // One example is you can use it to disable security check (https):
 //
-//      gorequest.New().TLSClientConfig(&tls.Config{ InsecureSkipVerify: true}).
+//      grequest.New().TLSClientConfig(&tls.Config{ InsecureSkipVerify: true}).
 //        Get("https://disable-security-check.com").
 //        End()
 //
@@ -484,15 +492,15 @@ func (s *SuperAgent) TLSClientConfig(config *tls.Config) *SuperAgent {
 // It provides a convenience way to setup proxy which have advantages over usual old ways.
 // One example is you might try to set `http_proxy` environment. This means you are setting proxy up for all the requests.
 // You will not be able to send different request with different proxy unless you change your `http_proxy` environment again.
-// Another example is using Golang proxy setting. This is normal prefer way to do but too verbase compared to GoRequest's Proxy:
+// Another example is using Golang proxy setting. This is normal prefer way to do but too verbase compared to grequest's Proxy:
 //
-//      gorequest.New().Proxy("http://myproxy:9999").
+//      grequest.New().Proxy("http://myproxy:9999").
 //        Post("http://www.google.com").
 //        End()
 //
 // To set no_proxy, just put empty string to Proxy func:
 //
-//      gorequest.New().Proxy("").
+//      grequest.New().Proxy("").
 //        Post("http://www.google.com").
 //        End()
 //
@@ -528,14 +536,14 @@ func (s *SuperAgent) RedirectPolicy(policy func(req Request, via []Request) erro
 // Send function accepts either json string or query strings which is usually used to assign data to POST or PUT method.
 // Without specifying any type, if you give Send with json data, you are doing requesting in json format:
 //
-//      gorequest.New().
+//      grequest.New().
 //        Post("/search").
 //        Send(`{ query: 'sushi' }`).
 //        End()
 //
-// While if you use at least one of querystring, GoRequest understands and automatically set the Content-Type to `application/x-www-form-urlencoded`
+// While if you use at least one of querystring, grequest understands and automatically set the Content-Type to `application/x-www-form-urlencoded`
 //
-//      gorequest.New().
+//      grequest.New().
 //        Post("/search").
 //        Send("query=tonkatsu").
 //        End()
@@ -543,7 +551,7 @@ func (s *SuperAgent) RedirectPolicy(policy func(req Request, via []Request) erro
 // So, if you want to strictly send json format, you need to use Type func to set it as `json` (Please see more details in Type function).
 // You can also do multiple chain of Send:
 //
-//      gorequest.New().
+//      grequest.New().
 //        Post("/search").
 //        Send("query=bicycle&size=50x50").
 //        Send(`{ wheel: '4'}`).
@@ -556,7 +564,7 @@ func (s *SuperAgent) RedirectPolicy(policy func(req Request, via []Request) erro
 //        Firefox string
 //      }
 //      ver := BrowserVersionSupport{ Chrome: "37.0.2041.6", Firefox: "30.0" }
-//      gorequest.New().
+//      grequest.New().
 //        Post("/update_version").
 //        Send(ver).
 //        Send(`{"Safari":"5.1.10"}`).
@@ -564,7 +572,7 @@ func (s *SuperAgent) RedirectPolicy(policy func(req Request, via []Request) erro
 //
 // If you have set Type to text or Content-Type to text/plain, content will be sent as raw string in body instead of form
 //
-//      gorequest.New().
+//      grequest.New().
 //        Post("/greet").
 //        Type("text").
 //        Send("hello world").
@@ -709,7 +717,7 @@ type File struct {
 // SendFile function works only with type "multipart". The function accepts one mandatory and up to two optional arguments. The mandatory (first) argument is the file.
 // The function accepts a path to a file as string:
 //
-//      gorequest.New().
+//      grequest.New().
 //        Post("http://example.com").
 //        Type("multipart").
 //        SendFile("./example_file.ext").
@@ -718,7 +726,7 @@ type File struct {
 // File can also be a []byte slice of a already file read by eg. ioutil.ReadFile:
 //
 //      b, _ := ioutil.ReadFile("./example_file.ext")
-//      gorequest.New().
+//      grequest.New().
 //        Post("http://example.com").
 //        Type("multipart").
 //        SendFile(b).
@@ -727,7 +735,7 @@ type File struct {
 // Furthermore file can also be a os.File:
 //
 //      f, _ := os.Open("./example_file.ext")
-//      gorequest.New().
+//      grequest.New().
 //        Post("http://example.com").
 //        Type("multipart").
 //        SendFile(f).
@@ -737,7 +745,7 @@ type File struct {
 // When file is a []byte slice, filename defaults to "filename". In all cases the automatically determined filename can be overwritten:
 //
 //      b, _ := ioutil.ReadFile("./example_file.ext")
-//      gorequest.New().
+//      grequest.New().
 //        Post("http://example.com").
 //        Type("multipart").
 //        SendFile(b, "my_custom_filename").
@@ -747,7 +755,7 @@ type File struct {
 // So if you send multiple files, the fieldnames will be file1, file2, ... unless it is overwritten. If fieldname is set to "file" it will be automatically set to fileNUMBER, where number is the greatest exsiting number+1.
 //
 //      b, _ := ioutil.ReadFile("./example_file.ext")
-//      gorequest.New().
+//      grequest.New().
 //        Post("http://example.com").
 //        Type("multipart").
 //        SendFile(b, "", "my_custom_fieldname"). // filename left blank, will become "example_file.ext"
@@ -844,7 +852,7 @@ func changeMapToURLValues(data map[string]interface{}) url.Values {
 		case bool:
 			newUrlValues.Add(k, strconv.FormatBool(val))
 			// if a number, change to string
-			// json.Number used to protect against a wrong (for GoRequest) default conversion
+			// json.Number used to protect against a wrong (for grequest) default conversion
 			// which always converts number to float64.
 			// This type is caused by using Decoder.UseNumber()
 		case json.Number:
@@ -911,21 +919,21 @@ func changeMapToURLValues(data map[string]interface{}) url.Values {
 //
 // For example:
 //
-//    resp, body, errs := gorequest.New().Get("http://www.google.com").End()
+//    resp, body, errs := grequest.New().Get("http://www.google.com").End()
 //    if (errs != nil) {
 //      fmt.Println(errs)
 //    }
 //    fmt.Println(resp, body)
 //
 // Moreover, End function also supports callback which you can put as a parameter.
-// This extends the flexibility and makes GoRequest fun and clean! You can use GoRequest in whatever style you love!
+// This extends the flexibility and makes grequest fun and clean! You can use grequest in whatever style you love!
 //
 // For example:
 //
-//    func printBody(resp gorequest.Response, body string, errs []error){
+//    func printBody(resp grequest.Response, body string, errs []error){
 //      fmt.Println(resp.Status)
 //    }
-//    gorequest.New().Get("http://www..google.com").End(printBody)
+//    grequest.New().Get("http://www..google.com").End(printBody)
 //
 func (s *SuperAgent) End(callback ...func(response Response, body string, errs []error)) (Response, string, []error) {
 	var bytesCallback []func(response Response, body []byte, errs []error)
@@ -1115,7 +1123,7 @@ func (s *SuperAgent) MakeRequest() (*http.Request, error) {
 	//
 	// See PR #136 for more information:
 	//
-	//     https://github.com/parnurzeal/gorequest/pull/136
+	//     https://github.com/parnurzeal/grequest/pull/136
 	//
 	if s.TargetType == "json" {
 		// If-case to give support to json array. we check if

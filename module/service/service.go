@@ -15,13 +15,14 @@ import (
 	"github.com/itchenyi/register/internal/tool"
 	"github.com/itchenyi/register/module/upstream"
 	"github.com/itchenyi/register/internal/grequest"
+	"net/http"
 )
 
 func isRegister(serviceId string) bool {
 	resData := make(map[string]interface{})
 
 	_serivces := func () []string {
-		request := grequest.New().Timeout(5*time.Second)
+		request := grequest.Q()
 		targetUrl := consul.ServerURL() + path.Join("agent", "services")
 
 		resp, _, respErr := request.Put(targetUrl).EndStruct(&resData)
@@ -66,7 +67,8 @@ func Register (register proto.Register, svcAddress string) error {
 		}
 	}
 
-	request := grequest.New().Timeout(5*time.Second)
+	request := grequest.Q()
+
 	targetUrl := consul.ServerURL() + path.Join("agent", "service", "register")
 	log.Info("consul server uri: ", targetUrl)
 
@@ -104,7 +106,8 @@ func Register (register proto.Register, svcAddress string) error {
 		healthCheck.Script = "/welab.co/bin/consul-health ping"
 		healthCheck.Tcp = ""
 
-		request := grequest.New().Timeout(5*time.Second)
+		request := grequest.Q()
+
 		targetUrl := consul.ServerURL() + path.Join("agent", "check", "register")
 
 		data, err := json.Marshal(healthCheck)
@@ -127,7 +130,8 @@ func Register (register proto.Register, svcAddress string) error {
 		healthCheck.Tcp = fmt.Sprintf("%s:%s", svcAddress, strconv.Itoa(register.Port))
 		healthCheck.Script = ""
 
-		request := grequest.New().Timeout(5*time.Second)
+		request := grequest.Q()
+
 		targetUrl := consul.ServerURL() + path.Join("agent", "check", "register")
 
 		data, err := json.Marshal(healthCheck)
@@ -165,7 +169,8 @@ func Register (register proto.Register, svcAddress string) error {
 }
 
 func DeRegister (register proto.Register) error {
-	request := grequest.New().Timeout(5*time.Second)
+	request := grequest.Q()
+
 	targetUrl := consul.ServerURL() + path.Join(
 		"agent", "service", "deregister", register.Id)
 

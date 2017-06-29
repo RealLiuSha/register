@@ -4,7 +4,6 @@ import (
 	"os"
 	"fmt"
 	"net"
-	"time"
 	"path"
 	"errors"
 	"strings"
@@ -54,7 +53,7 @@ func UpstreamList() ([]string, error) {
 	log.Debug("the upstream list api for consul-kv is: ", targetUrl)
 
 	resData := make([]interface{}, 1)
-	request := grequest.New().Timeout(5*time.Second)
+	request := grequest.Q()
 
 	resp, _, resp_err := request.Get(targetUrl).EndStruct(&resData)
 

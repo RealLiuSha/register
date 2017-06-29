@@ -3,7 +3,6 @@ package upstream
 import (
 	"fmt"
 	"path"
-	"time"
 	"regexp"
 	"errors"
 	"strings"
@@ -39,7 +38,7 @@ func DynamicServers() ([]string, error) {
 	log.Debug("the orange api for marathon is: ", targetUrl)
 
 	resData := make(map[string]interface{})
-	request := grequest.New().Timeout(5*time.Second)
+	request := grequest.Q()
 
 	resp, _, respErr := request.Get(targetUrl).EndStruct(&resData)
 
@@ -83,7 +82,8 @@ func Servers(name string, svcAddress string) ([]map[string]string, error) {
 	log.Debug("the upstream server list api for openresty is: ", targetUrl)
 
 	servers := make([]map[string]string, 0)
-	request := grequest.New().Timeout(5*time.Second)
+	request := grequest.Q()
+
 	resp, resData, respErr := request.Get(targetUrl).EndBytes()
 
 	if respErr != nil || resp.StatusCode != 200 {
@@ -131,7 +131,7 @@ func Update(name string, address string, port string, action string) bool {
 			targetUrl := fmt.Sprintf("http://%s:%s", dynamicServer, internal.DYUPS_PORT) +
 				path.Join(internal.DYUPS_URL)
 
-			request := grequest.New().Timeout(5*time.Second).SetRawQuery(true)
+			request := grequest.Q().SetRawQuery(true)
 
 			switch action {
 			case "add", "remove":
