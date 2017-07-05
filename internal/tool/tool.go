@@ -1,8 +1,9 @@
 package tool
 
 import (
-	"net"
 	"fmt"
+	"net"
+
 	"github.com/itchenyi/register/internal/log"
 )
 
@@ -18,9 +19,9 @@ func HttpHealthCheck(host string, port string) bool {
 	servAddr := fmt.Sprintf("%s:%s", host, port)
 
 	echoPacket := "GET / HTTP/1.1\r\n" +
-		          fmt.Sprintf("Host: %s\r\n", servAddr) +
-				  "Accept: */*\r\n" +
-		          "User-Agent: DevOps/Regsiter Check\r\n\r\n"
+		fmt.Sprintf("Host: %s\r\n", servAddr) +
+		"Accept: */*\r\n" +
+		"User-Agent: DevOps/Regsiter Check\r\n\r\n"
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp", servAddr)
 	if err != nil {
@@ -29,12 +30,12 @@ func HttpHealthCheck(host string, port string) bool {
 	}
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
-	defer conn.Close()
-
 	if err != nil {
 		log.Error(fmt.Sprintf("Dial(%s) failed:", servAddr), err.Error())
 		return false
 	}
+
+	defer conn.Close()
 
 	_, err = conn.Write([]byte(echoPacket))
 	if err != nil {

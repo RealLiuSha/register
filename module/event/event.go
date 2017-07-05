@@ -35,7 +35,7 @@ func Handle (event *docker.APIEvents, client *docker.Client) {
 		}
 
 		if !func(_envs envMap) bool {
-			_keys := []string{"HOST", "SERVICE_NAME", "SERVICE_PORT", "SERVICE_TAGS"}
+			_keys := []string{"SERVICE_NAME", "SERVICE_PORT", "MARATHON_APP_ID"}
 
 			for _, key := range _keys {
 				if _, ok := _envs[key]; !ok {
@@ -98,11 +98,11 @@ func Handle (event *docker.APIEvents, client *docker.Client) {
 		err = service.Register(proto.Register {
 			Id: getRegId(containerEnv["SERVICE_PORT"].(int)),
 			Name: containerEnv["SERVICE_NAME"].(string),
-			Address: containerEnv["HOST"].(string),
-			Tags: []string{containerEnv["SERVICE_TAGS"].(string)},
+			Address: containerEnv["DOCKER_ADDRESS"].(string),
+			Tags: []string{containerEnv["MARATHON_APP_ID"].(string)},
 			Port: containerEnv["SERVICE_PORT"].(int),
 			EnableTagOverride: false,
-		}, containerEnv["DOCKER_ADDRESS"].(string))
+		})
 
 		if err !=  nil {
 			log.Error(err)

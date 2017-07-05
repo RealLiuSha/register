@@ -1,27 +1,26 @@
 package service
 
 import (
-	"fmt"
-	"time"
-	"path"
-	"errors"
-	"strings"
-	"strconv"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"path"
+	"strconv"
+	"strings"
+	"time"
 
-	"github.com/itchenyi/register/proto"
-	"github.com/itchenyi/register/internal/log"
-	"github.com/itchenyi/register/module/consul"
-	"github.com/itchenyi/register/internal/tool"
-	"github.com/itchenyi/register/module/upstream"
 	"github.com/itchenyi/register/internal/grequest"
-	"net/http"
+	"github.com/itchenyi/register/internal/log"
+	"github.com/itchenyi/register/internal/tool"
+	"github.com/itchenyi/register/module/consul"
+	"github.com/itchenyi/register/module/upstream"
+	"github.com/itchenyi/register/proto"
 )
 
 func isRegister(serviceId string) bool {
 	resData := make(map[string]interface{})
 
-	_serivces := func () []string {
+	_serivces := func() []string {
 		request := grequest.Q()
 		targetUrl := consul.ServerURL() + path.Join("agent", "services")
 
@@ -48,20 +47,20 @@ func isRegister(serviceId string) bool {
 	return false
 }
 
-func Register (register proto.Register, svcAddress string) error {
+func Register(register proto.Register) error {
 	for retry := 0; retry < 30; retry++ {
 		time.Sleep(time.Second * 2)
 
-		if tool.HttpHealthCheck(svcAddress, strconv.Itoa(register.Port)) {
+		if tool.HttpHealthCheck(register.Address, strconv.Itoa(register.Port)) {
 			break
 		}
 
 		if retry < 15 {
-			log.Info("try to verify http server: count-->:", retry + 1)
+			log.Info("try to verify http server: count-->:", retry+1)
 			continue
 		}
 
-		log.Error("try to verify http server: count-->:", retry + 1)
+		log.Error("try to verify http server: count-->:", retry+1)
 		if (retry + 1) == 30 {
 			return errors.New("service connection fails...")
 		}
@@ -83,25 +82,25 @@ func Register (register proto.Register, svcAddress string) error {
 	}
 
 	for retry := 0; retry < 5; retry++ {
-		time.Sleep(time.Second)
 		if isRegister(register.Id) {
 			break
 		}
 
-		log.Debug("detect register status: count-->:", retry + 1)
+		time.Sleep(time.Second)
+		log.Debug("detect register status: count-->:", retry+1)
 	}
 
 	log.Info("service register successful: ID-->", register.Id)
 
 	healthCheck := proto.HealthCheck{
-		Interval: "10s",
-		Timeout: "3s",
+		Interval:       "10s",
+		Timeout:        "3s",
 		Deregister_Csa: "1m",
-		ServiceID: register.Id,
+		ServiceID:      register.Id,
 	}
 	id_splits := strings.Split(register.Id, ":")
 
-	func () {
+	func() {
 		healthCheck.Name = fmt.Sprintf("ping_check@%s", id_splits[1][0:12])
 		healthCheck.Script = "/welab.co/bin/consul-health ping"
 		healthCheck.Tcp = ""
@@ -125,9 +124,9 @@ func Register (register proto.Register, svcAddress string) error {
 		log.Info("service health check(ping_check) register successful")
 	}()
 
-	func () {
+	func() {
 		healthCheck.Name = fmt.Sprintf("tcp_check@%s", id_splits[1][0:12])
-		healthCheck.Tcp = fmt.Sprintf("%s:%s", svcAddress, strconv.Itoa(register.Port))
+		healthCheck.Tcp = fmt.Sprintf("%s:%s", register.Address, strconv.Itoa(register.Port))
 		healthCheck.Script = ""
 
 		request := grequest.Q()
@@ -149,7 +148,7 @@ func Register (register proto.Register, svcAddress string) error {
 		log.Info("service health check(tcp_check) register successful")
 	}()
 
-	func () {
+	func() {
 		upstreamNameList, err := consul.UpstreamList()
 		if err != nil {
 			log.Error("update upstream failure: ", err)
@@ -168,7 +167,7 @@ func Register (register proto.Register, svcAddress string) error {
 	return nil
 }
 
-func DeRegister (register proto.Register) error {
+func DeRegister(register proto.Register) error {
 	request := grequest.Q()
 
 	targetUrl := consul.ServerURL() + path.Join(
@@ -188,12 +187,12 @@ func DeRegister (register proto.Register) error {
 			break
 		}
 
-		log.Debug("detect deregister status: count->>", retry + 1)
+		log.Debug("detect deregister status: count->>", retry+1)
 	}
 
 	log.Info("service deregister successful: ID-->", register.Id)
 
-	func () {
+	func() {
 		upstreamNameList, err := consul.UpstreamList()
 		if err != nil {
 			log.Error("update upstream failure: ", err)
@@ -212,11 +211,11 @@ func DeRegister (register proto.Register) error {
 	return nil
 }
 
-func CheckTimer (seconds int64) {
+func CheckTimer(seconds int64) {
 	timer := time.NewTicker(time.Duration(seconds) * time.Second)
 	for {
 		select {
-		case <- timer.C:
+		case <-timer.C:
 			// TODO Upstream Integrity check
 			log.Info("Start Upstream Check...")
 		}

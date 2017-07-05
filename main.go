@@ -32,12 +32,15 @@ func init() {
 	flag.StringVar(&internal.DYUPS_PORT, "dyups.port", "18081", "orange server port")
 	flag.StringVar(&internal.DYUPS_URL, "dyups.url", "/upstream-admin", "orange upstream url")
 
-	flag.Int64Var(&internal.UPSTREAM_CHECK_SECOUNDS, "check.upstream", 10, "timer check upstream duration")
+	flag.Int64Var(&internal.UPSTREAM_CHECK_SECONDS, "check.second", 10, "timer check upstream duration")
+	flag.BoolVar(&internal.UPSTREAM_CHECK_ENABLE, "check.enable", false, "timer check upstream is enable")
 	flag.Parse()
 }
 
 func main() {
-	go service.CheckTimer(internal.UPSTREAM_CHECK_SECOUNDS)
+	if internal.UPSTREAM_CHECK_ENABLE {
+		go service.CheckTimer(internal.UPSTREAM_CHECK_SECONDS)
+	}
 
 	client, err := docker.NewClient(internal.DOCKER_ENDPOINT)
 	if err != nil {
