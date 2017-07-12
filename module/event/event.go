@@ -4,7 +4,6 @@ import (
 	"os"
 	"fmt"
 	"errors"
-	"os/exec"
 	"strconv"
 	"strings"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/itchenyi/register/proto"
 	"github.com/itchenyi/register/internal/log"
 	"github.com/itchenyi/register/module/service"
+	"github.com/itchenyi/register/internal/tool"
 )
 
 func Handle (event *docker.APIEvents, client *docker.Client) {
@@ -58,19 +58,23 @@ func Handle (event *docker.APIEvents, client *docker.Client) {
 		envs["DOCKER_ADDRESS"] = func (_networks map[string]docker.ContainerNetwork, _id string) string {
 			for key := range _networks {
 				if obj, exists := _networks[key]; exists {
-					return obj.IPAddress
+					if obj.IPAddress != "" {
+						return obj.IPAddress
+					}
+
+					continue
 				}
 			}
 
-			return func () string {
-				cmd := exec.Command(
-					fmt.Sprintf("docker exec %s ifconfig ", _id) +
-						"eth0|grep -oP '\\d.+(?=  (Bcast:|netmask))'")
+			cmd := fmt.Sprintf("docker exec %s ip addr show ", container.ID) +
+					"eth0|awk '/inet /{print $2}'|cut -d/ -f1"
 
-				out, _ := cmd.CombinedOutput()
+			address, err := tool.CmdOutBytes("/bin/sh", "-c", cmd)
+			if err != nil {
+				return ""
+			}
 
-				return string(out)
-			} ()
+			return strings.TrimSuffix(string(address), "\n")
 		} (container.NetworkSettings.Networks, container.ID)
 
 		return envs, err

@@ -48,19 +48,23 @@ func isRegister(serviceId string) bool {
 }
 
 func Register(register proto.Register) error {
+	if !tool.IpValid(register.Address) {
+		return errors.New("invalid docker IP address")
+	}
+
 	for retry := 0; retry < 30; retry++ {
 		time.Sleep(time.Second * 2)
 
-		if tool.HttpHealthCheck(register.Address, strconv.Itoa(register.Port)) {
+		if tool.TcpHealthCheck(register.Address, strconv.Itoa(register.Port)) {
 			break
 		}
 
 		if retry < 15 {
-			log.Info("try to verify http server: count-->:", retry+1)
+			log.Info("try to verify server: count-->:", retry+1)
 			continue
 		}
 
-		log.Error("try to verify http server: count-->:", retry+1)
+		log.Error("try to verify server: count-->:", retry+1)
 		if (retry + 1) == 30 {
 			return errors.New("service connection fails...")
 		}

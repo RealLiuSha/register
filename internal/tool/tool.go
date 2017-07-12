@@ -3,8 +3,11 @@ package tool
 import (
 	"fmt"
 	"net"
+	"bytes"
+	"os/exec"
 
 	"github.com/itchenyi/register/internal/log"
+	"time"
 )
 
 func IpValid(address string) bool {
@@ -13,6 +16,14 @@ func IpValid(address string) bool {
 		return false
 	}
 	return true
+}
+
+func CmdOutBytes(name string, arg ...string) ([]byte, error) {
+	cmd := exec.Command(name, arg...)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	return out.Bytes(), err
 }
 
 func HttpHealthCheck(host string, port string) bool {
@@ -50,5 +61,17 @@ func HttpHealthCheck(host string, port string) bool {
 		return false
 	}
 
+	return true
+}
+
+func TcpHealthCheck(host string, port string) bool {
+	servAddr := fmt.Sprintf("%s:%s", host, port)
+	conn, err := net.DialTimeout("tcp", servAddr, time.Second * 2)
+	if err != nil {
+		log.Error(fmt.Sprintf("HealthCheck(%s) failed:", servAddr), err.Error())
+		return false
+	}
+
+	defer conn.Close()
 	return true
 }
